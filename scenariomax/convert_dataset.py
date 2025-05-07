@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import tensorflow as tf
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -14,6 +15,7 @@ from scenariomax.raw_to_unified.write import (
     write_to_directory,
 )
 from scenariomax.unified_to_tfexample.shard_tfexample import shard_tfrecord
+from scenariomax.unified_to_waymo.process_waymo import postprocess_waymo
 
 
 logger = get_logger(__name__)
@@ -26,6 +28,8 @@ def convert_dataset(args, dataset):
         postprocess_func = postprocess_tfexample
     elif args.target_format == "gpudrive":
         postprocess_func = postprocess_gpudrive
+    elif args.target_format == "waymo_format":
+        postprocess_func = postprocess_waymo
     elif args.target_format == "pickle":
         postprocess_func = None
     else:
@@ -152,7 +156,7 @@ if __name__ == "__main__":
         "--target_format",
         type=str,
         default="pickle",
-        help="The target format for conversion (pickle, tfexample or gpudrive).",
+        help="The target format for conversion (pickle, tfexample, gpudrive, or waymo_format).",
     )
     parser.add_argument(
         "--shard",
@@ -236,5 +240,27 @@ if __name__ == "__main__":
                 num_threads=args.num_workers,
                 num_shards=args.shard,
             )
+    elif args.target_format == "waymo_format":
+        logger.info("Merging final Waymo TFRecord files")
+        for dataset in datasets_to_process:
+            dataset_dir = os.path.join(args.dst, dataset)
+            if os.path.exists(dataset_dir):
+                # Look for tfrecord subdirectories created by the postprocessor
+                for worker_dir in os.listdir(dataset_dir):
+                    worker_path = os.path.join(dataset_dir, worker_dir)
+                    if os.path.isdir(worker_path):
+                        tfrecord_dir = os.path.join(worker_path, "tfrecord")
+                        if os.path.exists(tfrecord_dir) and os.path.isdir(tfrecord_dir):
+                            # Merge all TFRecord files in this directory
+                            output_file = os.path.join(args.dst, f"{dataset}_{worker_dir}.tfrecord")
+                            logger.info(f"Merging TFRecord files from {tfrecord_dir} to {output_file}")
+                            
+                            # Use TensorFlow's merge functionality
+                            with tf.io.TFRecordWriter(output_file) as writer:
+                                for tf_file in os.listdir(tfrecord_dir):
+                                    if tf_file.endswith(".tfrecord"):
+                                        tf_path = os.path.join(tfrecord_dir, tf_file)
+                                        for record in tf.data.TFRecordDataset([tf_path]):
+                                            writer.write(record.numpy())
 
     logger.info("Dataset conversion completed successfully")

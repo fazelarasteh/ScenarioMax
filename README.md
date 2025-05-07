@@ -11,6 +11,7 @@ ScenarioMax is an extension to [ScenarioNet](https://github.com/metadriverse/sce
 - **Multiple Output Formats**:
   - **TFRecord/TFExample**: Generate optimized TFRecord files for Waymax and V-Max
   - **JSON**: Create compatible output for GPUDrive
+  - **Waymo Format**: Convert back to the native Waymo Open Dataset format for seamless integration with Waymo tools
 - **SDC Path Support**: Add and evaluate multiple potential trajectories for self-driving vehicles
 - **Extensible Architecture**: Easily add support for new datasets or output formats
 
@@ -26,6 +27,7 @@ ScenarioMax provides a complete data transformation workflow:
 2. **Unified to Target Format**:
    - **TFExample** (`unified_to_tfexample`): Converts unified data to TFRecord format for Waymax/V-Max
    - **GPUDrive** (`unified_to_gpudrive`): Converts unified data to JSON format for GPUDrive
+   - **Waymo Format** (`unified_to_waymo`): Converts unified data back to Waymo Open Dataset format
 
 This two-stage pipeline allows for flexible processing of autonomous driving datasets across different simulation platforms.
 
@@ -105,13 +107,40 @@ python scenariomax/convert_dataset.py \
   --num_workers 8
 ```
 
+### Converting to Waymo Open Dataset Format
+
+```bash
+# First convert raw data to pickle format
+python scenariomax/convert_dataset.py \
+  --waymo_src /path/to/waymo/data \
+  --dst /path/to/intermediate/directory \
+  --target_format pickle \
+  --num_workers 8
+
+# Then convert pickle to Waymo format
+python scenariomax/scripts/convert_pickle_to_waymo.py \
+  -d waymo \
+  --input_dir /path/to/intermediate/directory \
+  --output_dir /path/to/output/directory \
+  --num_workers 8 \
+  --merged_filename waymo_dataset.tfrecord
+
+# Or do it in one step
+python scenariomax/convert_dataset.py \
+  --waymo_src /path/to/waymo/data \
+  --dst /path/to/output/directory \
+  --target_format waymo_format \
+  --num_workers 8
+```
+
 ## Understanding the Output
 
 After running the conversion process, you'll have:
 
 - For `tfexample` format: TFRecord files compatible with Waymax and V-Max
 - For `gpudrive` format: JSON files compatible with GPUDrive
-- For `pickle` format: Standardized pickle files with unified scenario data. Pickle can be converted to a tfexample or a gpudrive afterwards.
+- For `waymo_format`: TFRecord files in the native Waymo Open Dataset format
+- For `pickle` format: Standardized pickle files with unified scenario data. Pickle can be converted to tfexample, gpudrive, or waymo_format afterwards.
 
 ## Documentation
 
@@ -125,6 +154,7 @@ After running the conversion process, you'll have:
 - TFRecord conversion pipeline for efficient data handling
 - SDC paths support
 - GPUDrive format support
+- Waymo Open Dataset format support
 
 ## License
 
