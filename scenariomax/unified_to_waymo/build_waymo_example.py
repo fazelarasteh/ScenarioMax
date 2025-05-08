@@ -8,6 +8,7 @@ import tensorflow as tf
 
 from scenariomax.logger_utils import get_logger
 from scenariomax.raw_to_unified.converter.waymo.waymo_protos import scenario_pb2
+from scenariomax.raw_to_unified.converter.waymo.waymo_protos import map_pb2
 from scenariomax.raw_to_unified.description import ScenarioDescription as SD
 from scenariomax.raw_to_unified.type import ScenarioType
 
@@ -187,7 +188,7 @@ def convert_dynamic_map_state(dynamic_map_states: Dict[str, Any], time_index: in
     if "traffic_light_states" in dynamic_map_states:
         for light_id, light_states in dynamic_map_states["traffic_light_states"].items():
             if time_index < len(light_states["state"]):
-                lane_state = scenario_pb2.TrafficSignalLaneState()
+                lane_state = map_pb2.TrafficSignalLaneState()
                 
                 try:
                     lane_state.lane = int(light_id)
@@ -204,29 +205,29 @@ def convert_dynamic_map_state(dynamic_map_states: Dict[str, Any], time_index: in
     return dynamic_map_state
 
 
-def convert_traffic_light_state(state_val: Any) -> scenario_pb2.TrafficSignalLaneState.State:
+def convert_traffic_light_state(state_val: Any) -> map_pb2.TrafficSignalLaneState.State:
     """Convert unified format traffic light state to Waymo traffic light state."""
     # This mapping should be adjusted based on your specific state values
     if state_val == "UNKNOWN":
-        return scenario_pb2.TrafficSignalLaneState.UNKNOWN
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_UNKNOWN
     elif state_val == "ARROW_STOP":
-        return scenario_pb2.TrafficSignalLaneState.ARROW_STOP
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_ARROW_STOP
     elif state_val == "ARROW_CAUTION":
-        return scenario_pb2.TrafficSignalLaneState.ARROW_CAUTION
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_ARROW_CAUTION
     elif state_val == "ARROW_GO":
-        return scenario_pb2.TrafficSignalLaneState.ARROW_GO
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_ARROW_GO
     elif state_val == "STOP":
-        return scenario_pb2.TrafficSignalLaneState.STOP
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_STOP
     elif state_val == "CAUTION":
-        return scenario_pb2.TrafficSignalLaneState.CAUTION
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_CAUTION
     elif state_val == "GO":
-        return scenario_pb2.TrafficSignalLaneState.GO
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_GO
     elif state_val == "FLASHING_STOP":
-        return scenario_pb2.TrafficSignalLaneState.FLASHING_STOP
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_FLASHING_STOP
     elif state_val == "FLASHING_CAUTION":
-        return scenario_pb2.TrafficSignalLaneState.FLASHING_CAUTION
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_FLASHING_CAUTION
     else:
-        return scenario_pb2.TrafficSignalLaneState.UNKNOWN
+        return map_pb2.TrafficSignalLaneState.State.LANE_STATE_UNKNOWN
 
 
 def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Optional[scenario_pb2.MapFeature]:
@@ -243,7 +244,7 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
     
     # Convert lane
     if "speed_limit_mph" in feature_data:
-        lane = scenario_pb2.Lane()
+        lane = map_pb2.LaneCenter()
         
         # Set speed limit
         lane.speed_limit_mph = float(feature_data.get("speed_limit_mph", 0))
@@ -254,7 +255,7 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
         # Set polyline
         if "polyline" in feature_data:
             for point in feature_data["polyline"]:
-                map_point = scenario_pb2.MapPoint()
+                map_point = map_pb2.MapPoint()
                 map_point.x = float(point[0])
                 map_point.y = float(point[1])
                 if len(point) > 2:
@@ -266,10 +267,10 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
         
         # Set entry and exit lanes
         for entry_lane in feature_data.get("entry_lanes", []):
-            lane.entry_lanes.append(str(entry_lane))
+            lane.entry_lanes.append(entry_lane)
         
         for exit_lane in feature_data.get("exit_lanes", []):
-            lane.exit_lanes.append(str(exit_lane))
+            lane.exit_lanes.append(exit_lane)
         
         # Set boundaries
         for boundary in feature_data.get("left_boundaries", []):
@@ -296,7 +297,7 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
     elif feature_type in ["BROKEN_SINGLE_WHITE", "SOLID_SINGLE_WHITE", "SOLID_DOUBLE_WHITE", 
                          "BROKEN_SINGLE_YELLOW", "BROKEN_DOUBLE_YELLOW", "SOLID_SINGLE_YELLOW",
                          "SOLID_DOUBLE_YELLOW", "PASSING_DOUBLE_YELLOW"]:
-        road_line = scenario_pb2.RoadLine()
+        road_line = map_pb2.RoadLine()
         
         # Set road line type
         road_line.type = convert_road_line_type(feature_type)
@@ -304,7 +305,7 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
         # Set polyline
         if "polyline" in feature_data:
             for point in feature_data["polyline"]:
-                map_point = scenario_pb2.MapPoint()
+                map_point = map_pb2.MapPoint()
                 map_point.x = float(point[0])
                 map_point.y = float(point[1])
                 if len(point) > 2:
@@ -316,7 +317,7 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
     
     # Convert road edge
     elif feature_type in ["BOUNDARY_UNKNOWN", "ROAD_EDGE_BOUNDARY", "ROAD_EDGE_MEDIAN"]:
-        road_edge = scenario_pb2.RoadEdge()
+        road_edge = map_pb2.RoadEdge()
         
         # Set road edge type
         road_edge.type = convert_road_edge_type(feature_type)
@@ -324,7 +325,7 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
         # Set polyline
         if "polyline" in feature_data:
             for point in feature_data["polyline"]:
-                map_point = scenario_pb2.MapPoint()
+                map_point = map_pb2.MapPoint()
                 map_point.x = float(point[0])
                 map_point.y = float(point[1])
                 if len(point) > 2:
@@ -336,11 +337,11 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
     
     # Convert stop sign
     elif feature_type == ScenarioType.STOP_SIGN:
-        stop_sign = scenario_pb2.StopSign()
+        stop_sign = map_pb2.StopSign()
         
         # Set position
         if "position" in feature_data:
-            position = scenario_pb2.MapPoint()
+            position = map_pb2.MapPoint()
             position.x = float(feature_data["position"][0])
             position.y = float(feature_data["position"][1])
             position.z = float(feature_data["position"][2])
@@ -348,19 +349,19 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
         
         # Set lanes
         for lane_id in feature_data.get("lane", []):
-            stop_sign.lane.append(str(lane_id))
+            stop_sign.lane.append(lane_id)
         
         map_feature.stop_sign.CopyFrom(stop_sign)
         return map_feature
     
     # Convert crosswalk
     elif feature_type == ScenarioType.CROSSWALK:
-        crosswalk = scenario_pb2.Crosswalk()
+        crosswalk = map_pb2.Crosswalk()
         
         # Set polyline for crosswalk boundary
         if "polygon" in feature_data:
             for point in feature_data["polygon"]:
-                map_point = scenario_pb2.MapPoint()
+                map_point = map_pb2.MapPoint()
                 map_point.x = float(point[0])
                 map_point.y = float(point[1])
                 if len(point) > 2:
@@ -376,62 +377,62 @@ def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Option
         return None
 
 
-def convert_lane_type(lane_type: str) -> scenario_pb2.Lane.LaneType:
+def convert_lane_type(lane_type: str) -> map_pb2.LaneCenter.LaneType:
     """Convert unified format lane type to Waymo lane type."""
     # Map your ScenarioType lane types to Waymo lane types
     if lane_type == "UNKNOWN":
-        return scenario_pb2.Lane.LANE_TYPE_UNDEFINED
+        return map_pb2.LaneCenter.LaneType.TYPE_UNDEFINED
     elif lane_type == "FREEWAY":
-        return scenario_pb2.Lane.FREEWAY
+        return map_pb2.LaneCenter.LaneType.TYPE_FREEWAY
     elif lane_type == "SURFACE_STREET":
-        return scenario_pb2.Lane.SURFACE_STREET
+        return map_pb2.LaneCenter.LaneType.TYPE_SURFACE_STREET
     elif lane_type == "BIKE_LANE":
-        return scenario_pb2.Lane.BIKE_LANE
+        return map_pb2.LaneCenter.LaneType.TYPE_BIKE_LANE
     else:
-        return scenario_pb2.Lane.LANE_TYPE_UNDEFINED
+        return map_pb2.LaneCenter.LaneType.TYPE_UNDEFINED
 
 
-def convert_road_line_type(line_type: str) -> scenario_pb2.RoadLine.RoadLineType:
+def convert_road_line_type(line_type: str) -> map_pb2.RoadLine.RoadLineType:
     """Convert unified format road line type to Waymo road line type."""
     if line_type == "BROKEN_SINGLE_WHITE":
-        return scenario_pb2.RoadLine.BROKEN_SINGLE_WHITE
+        return map_pb2.RoadLine.RoadLineType.TYPE_BROKEN_SINGLE_WHITE
     elif line_type == "SOLID_SINGLE_WHITE":
-        return scenario_pb2.RoadLine.SOLID_SINGLE_WHITE
+        return map_pb2.RoadLine.RoadLineType.TYPE_SOLID_SINGLE_WHITE
     elif line_type == "SOLID_DOUBLE_WHITE":
-        return scenario_pb2.RoadLine.SOLID_DOUBLE_WHITE
+        return map_pb2.RoadLine.RoadLineType.TYPE_SOLID_DOUBLE_WHITE
     elif line_type == "BROKEN_SINGLE_YELLOW":
-        return scenario_pb2.RoadLine.BROKEN_SINGLE_YELLOW
+        return map_pb2.RoadLine.RoadLineType.TYPE_BROKEN_SINGLE_YELLOW
     elif line_type == "BROKEN_DOUBLE_YELLOW":
-        return scenario_pb2.RoadLine.BROKEN_DOUBLE_YELLOW
+        return map_pb2.RoadLine.RoadLineType.TYPE_BROKEN_DOUBLE_YELLOW
     elif line_type == "SOLID_SINGLE_YELLOW":
-        return scenario_pb2.RoadLine.SOLID_SINGLE_YELLOW
+        return map_pb2.RoadLine.RoadLineType.TYPE_SOLID_SINGLE_YELLOW
     elif line_type == "SOLID_DOUBLE_YELLOW":
-        return scenario_pb2.RoadLine.SOLID_DOUBLE_YELLOW
+        return map_pb2.RoadLine.RoadLineType.TYPE_SOLID_DOUBLE_YELLOW
     elif line_type == "PASSING_DOUBLE_YELLOW":
-        return scenario_pb2.RoadLine.PASSING_DOUBLE_YELLOW
+        return map_pb2.RoadLine.RoadLineType.TYPE_PASSING_DOUBLE_YELLOW
     else:
-        return scenario_pb2.RoadLine.TYPE_UNDEFINED
+        return map_pb2.RoadLine.RoadLineType.TYPE_UNKNOWN
 
 
-def convert_road_edge_type(edge_type: str) -> scenario_pb2.RoadEdge.RoadEdgeType:
+def convert_road_edge_type(edge_type: str) -> map_pb2.RoadEdge.RoadEdgeType:
     """Convert unified format road edge type to Waymo road edge type."""
     if edge_type == "BOUNDARY_UNKNOWN":
-        return scenario_pb2.RoadEdge.BOUNDARY_UNKNOWN
+        return map_pb2.RoadEdge.RoadEdgeType.TYPE_UNKNOWN
     elif edge_type == "ROAD_EDGE_BOUNDARY":
-        return scenario_pb2.RoadEdge.ROAD_EDGE_BOUNDARY
+        return map_pb2.RoadEdge.RoadEdgeType.TYPE_ROAD_EDGE_BOUNDARY
     elif edge_type == "ROAD_EDGE_MEDIAN":
-        return scenario_pb2.RoadEdge.ROAD_EDGE_MEDIAN
+        return map_pb2.RoadEdge.RoadEdgeType.TYPE_ROAD_EDGE_MEDIAN
     else:
-        return scenario_pb2.RoadEdge.TYPE_UNDEFINED
+        return map_pb2.RoadEdge.RoadEdgeType.TYPE_UNKNOWN
 
 
-def convert_lane_boundary(boundary: Dict[str, Any]) -> scenario_pb2.LaneBoundary:
+def convert_lane_boundary(boundary: Dict[str, Any]) -> map_pb2.BoundarySegment:
     """Convert unified format lane boundary to Waymo lane boundary."""
-    lane_boundary = scenario_pb2.LaneBoundary()
+    lane_boundary = map_pb2.BoundarySegment()
     
     # Set boundary ID if available
     if "boundary_feature_id" in boundary:
-        lane_boundary.boundary_feature_id = str(boundary["boundary_feature_id"])
+        lane_boundary.boundary_feature_id = int(boundary.get("boundary_feature_id", 0))
     
     # Set boundary type
     if "boundary_type" in boundary:
@@ -440,13 +441,13 @@ def convert_lane_boundary(boundary: Dict[str, Any]) -> scenario_pb2.LaneBoundary
     return lane_boundary
 
 
-def convert_lane_neighbor(neighbor: Dict[str, Any]) -> scenario_pb2.LaneNeighbor:
+def convert_lane_neighbor(neighbor: Dict[str, Any]) -> map_pb2.LaneNeighbor:
     """Convert unified format lane neighbor to Waymo lane neighbor."""
-    lane_neighbor = scenario_pb2.LaneNeighbor()
+    lane_neighbor = map_pb2.LaneNeighbor()
     
     # Set neighbor lane ID
     if "feature_id" in neighbor:
-        lane_neighbor.feature_id = str(neighbor["feature_id"])
+        lane_neighbor.feature_id = int(neighbor.get("feature_id", 0))
     
     # Set self-to-neighbor edge
     if "self_start_index" in neighbor and "self_end_index" in neighbor:

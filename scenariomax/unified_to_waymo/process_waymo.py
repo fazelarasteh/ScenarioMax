@@ -8,6 +8,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 from scenariomax.logger_utils import get_logger
+from scenariomax.raw_to_unified.description import ScenarioDescription as SD
 from scenariomax.unified_to_waymo.build_waymo_example import build_waymo_example, write_to_tfrecord
 
 
