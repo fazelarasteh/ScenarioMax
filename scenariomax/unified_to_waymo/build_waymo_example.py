@@ -230,9 +230,9 @@ def convert_traffic_light_state(state_val: Any) -> map_pb2.TrafficSignalLaneStat
         return map_pb2.TrafficSignalLaneState.State.LANE_STATE_UNKNOWN
 
 
-def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Optional[scenario_pb2.MapFeature]:
+def convert_map_feature(feature_id: str, feature_data: Dict[str, Any]) -> Optional[map_pb2.MapFeature]:
     """Convert unified format map feature to Waymo map feature."""
-    map_feature = scenario_pb2.MapFeature()
+    map_feature = map_pb2.MapFeature()
     
     try:
         map_feature.id = int(feature_id)
