@@ -69,8 +69,18 @@ def get_nuplan_scenarios(
         # "scenario_filter.num_scenarios_per_type=1",
         # "scenario_filter.expand_scenarios=true",
         # "scenario_filter.limit_scenarios_per_type=10",  # use 10 scenarios per scenario type
-        "scenario_filter.timestamp_threshold_s=20",  # minial scenario duration (s)
+        "scenario_filter.timestamp_threshold_s=9",  # minimal scenario duration (s)
+        # "scenario_filter.map_names=[us-nv-las-vegas, us-pa-pittsburgh, us-ma-boston, sg-one-north]",  # filter by city/map names
+        # Set the maximum scenario duration to 9 seconds for all scenarios
+        "scenario_builder.scenario_mapping.subsample_ratio_override=0.5",  # 10 hz
     ]
+
+    # Add scenario duration = 9 seconds for all scenarios
+    for scenario_type in ["accelerating_at_crosswalk", "accelerating_at_stop_sign", "accelerating_at_traffic_light",
+                         "changing_lane", "following_lane_with_lead", "following_lane_without_lead", 
+                         "high_lateral_acceleration", "stationary", "traversing_intersection", "on_intersection",
+                         "starting_left_turn", "starting_right_turn"]:
+        dataset_parameters.append(f"scenario_builder.scenario_mapping.scenario_map.{scenario_type}=[9.0, -3.0]")
 
     if num_files is not None:
         dataset_parameters.append(f"scenario_filter.limit_total_scenarios={num_files}")
