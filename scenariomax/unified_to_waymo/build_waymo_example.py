@@ -172,13 +172,21 @@ def convert_track(track_id: str, track_data: Dict[str, Any]) -> scenario_pb2.Tra
 def convert_object_type(type_str: str) -> scenario_pb2.Track.ObjectType:
     """Convert ScenarioType to Waymo ObjectType."""
     if type_str == ScenarioType.VEHICLE:
-        return scenario_pb2.Track.TYPE_VEHICLE
+        # return scenario_pb2.Track.TYPE_VEHICLE
+        return 1
+    
     elif type_str == ScenarioType.PEDESTRIAN:
-        return scenario_pb2.Track.TYPE_PEDESTRIAN
+        # return scenario_pb2.Track.TYPE_PEDESTRIAN
+        return 2
+    
     elif type_str == ScenarioType.CYCLIST:
-        return scenario_pb2.Track.TYPE_CYCLIST
+        # return scenario_pb2.Track.TYPE_CYCLIST
+        return 3
+    
     else:
-        return scenario_pb2.Track.TYPE_OTHER
+        # return scenario_pb2.Track.TYPE_OTHER
+        return 1
+    
 
 
 def convert_dynamic_map_state(dynamic_map_states: Dict[str, Any], time_index: int) -> scenario_pb2.DynamicMapState:
